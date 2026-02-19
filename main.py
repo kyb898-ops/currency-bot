@@ -5,7 +5,7 @@ import os
 from xml.etree import ElementTree as ET
 
 # ===== ВСТАВЬ СЮДА СВОЙ ТОКЕН =====
-BOT_TOKEN = 'ВСТАВЬ_СЮДА_ТОКЕН_ОТ_BOTFATHER'
+BOT_TOKEN = '8193906266:AAFR3cqoUsU06xFBWyLoADAUSYJTQH3Sng4'
 # ==================================
 
 bot = telebot.TeleBot(BOT_TOKEN)
