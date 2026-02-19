@@ -5,21 +5,14 @@ import os
 import logging
 from xml.etree import ElementTree as ET
 
-# Включаем логи
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ===== ВСТАВЬ СЮДА СВОЙ ТОКЕН =====
 BOT_TOKEN = '8193906266:AAFR3cqoUsU06xFBWyLoADAUSYJTQH3Sng4'
-# ==================================
-
-bot = telebot.TeleBot(BOT_TOKEN, skip_pending=True)
+bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
-# ===== ОБРАБОТЧИКИ КОМАНД =====
-@bot.message_handler(commands=['start', 'rate'])
-def send_rate(message):
-    logger.info(f"Получена команда от пользователя {message.chat.id}")
+def get_currency_rates():
     try:
         xml = requests.get('https://www.cbr.ru/scripts/XML_daily.asp', timeout=10).content
         root = ET.fromstring(xml)
@@ -37,23 +30,28 @@ def send_rate(message):
         cny_rate = float(cny.find('Value').text.replace(',','.')) / float(cny.find('Nominal').text.replace(',','.'))
         msg += f"🇨🇳 CNY: {cny_rate:.2f} ₽\n"
         
-        logger.info(f"Отправляю ответ пользователю {message.chat.id}")
-        bot.reply_to(message, msg, parse_mode='HTML')
-        logger.info("Ответ отправлен успешно")
+        return msg
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
-        bot.reply_to(message, f"❌ Ошибка: {e}")
+        return f"❌ Ошибка: {e}"
 
-# ===== ВЕБХУК ДЛЯ FLASK =====
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    logger.info("Получен POST запрос от Telegram")
     update = request.get_json()
-    logger.info(f"Получены данные: {update}")
+    logger.info(f"Получен update: {update}")
     
-    if update:
-        bot.process_new_updates([telebot.types.Update.de_json(update)])
-        logger.info("Обработка обновлений завершена")
+    if update and 'message' in update:
+        message = update['message']
+        chat_id = message['chat']['id']
+        text = message.get('text', '')
+        
+        logger.info(f"Сообщение от {chat_id}: {text}")
+        
+        # Ручная проверка команд
+        if text in ['/start', '/rate']:
+            logger.info("Команда обнаружена, отправляю курсы")
+            msg = get_currency_rates()
+            bot.send_message(chat_id, msg, parse_mode='HTML')
+            logger.info("Сообщение отправлено")
     
     return '', 200
 
@@ -63,5 +61,5 @@ def index():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    logger.info(f"Запуск сервера на порту {port}")
+    logger.info(f"Запуск на порту {port}")
     app.run(host='0.0.0.0', port=port)
