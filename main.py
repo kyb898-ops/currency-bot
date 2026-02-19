@@ -11,6 +11,7 @@ BOT_TOKEN = '8193906266:AAFR3cqoUsU06xFBWyLoADAUSYJTQH3Sng4'
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
+# ===== ОБРАБОТЧИКИ КОМАНД =====
 @bot.message_handler(commands=['start', 'rate'])
 def send_rate(message):
     try:
@@ -37,9 +38,12 @@ def send_rate(message):
     except Exception as e:
         bot.reply_to(message, f"❌ Ошибка: {e}")
 
+# ===== ВЕБХУК ДЛЯ FLASK =====
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    # Получаем данные от Telegram
     update = request.get_json()
+    # Передаем их боту для обработки
     bot.process_new_updates([telebot.types.Update.de_json(update)])
     return '', 200
 
@@ -47,5 +51,6 @@ def webhook():
 def index():
     return '🤖 Бот работает!'
 
+# ===== ЗАПУСК =====
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
